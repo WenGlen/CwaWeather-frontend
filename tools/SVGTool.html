@@ -53,7 +53,8 @@ button:hover { background: #1f8fff; }
 
 .input-row {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 12px;
     margin-bottom: 12px;
 }
 .input-row input {
@@ -124,8 +125,11 @@ button:hover { background: #1f8fff; }
 .section-edit {
     flex: 1;
     background: #fafafa;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
-.section-edit h2 { margin-top: 0; }
+.section-edit h2 { margin-top: 0; margin-bottom: 10px; }
 /* ------------------------------------------------------ */
 /* CSS:Edit-END                                            */
 /* ------------------------------------------------------ */
@@ -145,7 +149,12 @@ button:hover { background: #1f8fff; }
 /* ------------------------------------------------------ */
 /* CSS:CodeFields-START                                    */
 /* ------------------------------------------------------ */
-.code-fields {}
+.code-fields {
+    flex:1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 /* ------------------------------------------------------ */
 /* CSS:CodeFields-END                                      */
 /* ------------------------------------------------------ */
@@ -220,33 +229,33 @@ button:hover { background: #1f8fff; }
         <div class="input-row">
             <label>X：</label><input type="number" id="inputX" />
             <label>Y：</label><input type="number" id="inputY" />
+            <button id="applyPoint">同步套用座標</button>
         </div>
-        <button id="applyPoint">套用座標（同步所有對應端點）</button>
+        
     </div>
     <!-- SECTION:EditFields-END -->
 
 
     <!-- SECTION:CodeFields-START -->
-    <div class="code-fields">
+    <div class="code-fields" style="flex:1;">
         <h2>SVG 程式碼</h2>
-        <textarea id="codeArea"></textarea>
+        <textarea id="codeArea" style="flex:1;"></textarea>
         <button id="applySvg">更新 SVG</button>
     </div>
     <!-- SECTION:CodeFields-END -->
 
 
     <!-- SECTION:Tools-START -->
-    <div class="tools" style="margin-top:20px;">
+    <div class="tools" >
         <h2>工具</h2>
         <!-- 參考底圖工具 -->
-        <div style="margin-top:20px;">
-            <h3>參考底圖</h3>
-            <input type="file" id="refImageInput" accept="image/*">
-        
-            <div style="margin-top:10px;">
-                <button id="toggleRefEdit">調整底圖</button>
+        <div class="input-row">
+            <h3>參考底圖：</h3>
+            <div >
+                <button id="toggleRefEdit" >調整底圖</button>
                 <button id="toggleAspect" style="display:none;">鎖定比例</button>
             </div>
+            <input type="file" id="refImageInput" accept="image/*" style="flex:1;">
         </div>
         
     </div>
@@ -549,8 +558,32 @@ document.addEventListener("keydown", e => {
    初始 SVG
 ============================================================ */
 document.getElementById("codeArea").value =
-`<svg viewBox="0 0 300 300">
-    <path d="M 50 50 L 200 50 L 200 200 L 50 200 Z" />
+`<svg viewBox="0 0 600 1200" id="twMap">
+    <g>
+        <!-- Paths -->
+        <path data-city="lienchiang" class="tw-city" d="M150 180 L180 190 L170 215 L140 205 Z"></path>
+        <path data-city="kinmen" class="tw-city" d="M30 350 L80 360 L70 400 L20 390 Z"></path>
+        <path data-city="penghu" class="tw-city" d="M35 565 L45 595 L15 605 L5 575 Z"></path>
+        <path data-city="newtaipei" class="tw-city" d="M315 200 L445 240 L440 290 L380 325 L290 245 Z"></path>
+        <path data-city="keelung" class="tw-city" d="M410 215 L430 230 L410 255 L390 240 Z"></path>
+        <path data-city="taipei" class="tw-city" d="M370 225 L410 255 L390 280 L350 250 Z"></path>
+        <path data-city="yilan" class="tw-city" d="M380 325 L440 290 L440 430 L340 430 L360 375 Z"></path>
+        <path data-city="taoyuan" class="tw-city" d="M290 245 L380 325 L360 375 L265 290 Z"></path>
+        <path data-city="hsinchu_county" class="tw-city" d="M265 290 L360 375 L340 430 L230 350 Z"></path>
+        <path data-city="hsinchu_city" class="tw-city" d="M250 315 L270 330 L250 365 L230 350 Z"></path>
+        <path data-city="miaoli" class="tw-city" d="M230 350 L340 430 L245 445 L180 430 Z"></path>
+        <path data-city="taichung" class="tw-city" d="M180 430 L245 445 L340 430 L330 485 L230 500 L150 485 Z"></path>
+        <path data-city="hualien" class="tw-city" d="M440 430 L400 650 L290 720 L330 485 L340 430 Z"></path>
+        <path data-city="taitung" class="tw-city" d="M290 720 L400 650 L320 920 L270 830 Z"></path>
+        <path data-city="nantou" class="tw-city" d="M330 485 L290 720 L270 720 L250 650 L240 580 L230 500 Z"></path>
+        <path data-city="changhua" class="tw-city" d="M150 485 L230 500 L240 580 L110 560 Z"></path>
+        <path data-city="yunlin" class="tw-city" d="M110 560 L240 580 L250 650 L100 630 Z"></path>
+        <path data-city="chiayi_county" class="tw-city" d="M100 630 L250 650 L270 720 L250 750 L90 730 Z"></path>
+        <path data-city="chiayi_city" class="tw-city" d="M170 680 L220 680 L220 700 L170 700 Z"></path>
+        <path data-city="tainan" class="tw-city" d="M90 730 L250 750 L180 805 L120 840 Z"></path>
+        <path data-city="kaohsiung" class="tw-city" d="M120 840 L180 805 L250 750 L270 720 L290 720 L270 830 L180 920 Z"></path>
+        <path data-city="pingtung" class="tw-city" d="M180 920 L270 830 L320 920 L300 1100 L240 1080 Z"></path>
+    </g>
 </svg>`;
 undoStack.push(document.getElementById("codeArea").value);
 renderSVG();
