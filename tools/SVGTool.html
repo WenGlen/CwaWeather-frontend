@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SVG 簡化地圖編輯工具（完整版 / HTML+CSS）</title>
+
+<style>
+/* ------------------------------------------------------ */
+/* CSS:BASE-START                                          */
+/* ------------------------------------------------------ */
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    color: #333;
+    background: #f8fafc;
+}
+
+.page {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.section {
+    padding: 16px;
+    overflow: auto;
+}
+
+textarea {
+    width: 100%;
+    height: 260px;
+    font-family: ui-monospace, monospace;
+    font-size: 14px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    resize: vertical;
+}
+
+button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    background: #4da6ff;
+    color: #fff;
+    cursor: pointer;
+}
+button:hover { background: #1f8fff; }
+
+.input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.input-row input {
+    width: 100px;
+    padding: 6px 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+/* ------------------------------------------------------ */
+/* CSS:BASE-END                                            */
+/* ------------------------------------------------------ */
+
+
+
+/* ------------------------------------------------------ */
+/* CSS:Display-START                                       */
+/* ------------------------------------------------------ */
+.section-display {
+    flex: 1;
+    border-right: 1px solid #e5e7eb;
+    background: #fff;
+    position: relative;
+}
+
+.svg-frame {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    border: 1px solid #e5e7eb;
+}
+
+/* ★ 強制套用給匯入的 SVG ★ */
+.svg-force path {
+    fill: #eee !important;      /* 淺灰底色 */
+    stroke: #999 !important;       /* 黑線 */
+    stroke-width: 1.5 !important;
+    stroke-linejoin: round !important;
+    stroke-linecap: round !important;
+}
+
+/* 編輯點 */
+.edit-point {
+    fill: #4da6ff;
+    stroke: none;
+    r: 2;
+    cursor: pointer;
+}
+
+/* 選取的端點 */
+.edit-point.selected {
+    fill: #ff7f50;
+}
+
+/* 拖曳預覽 */
+.drag-preview {
+    fill: rgba(77,166,255,0.55);
+}
+/* ------------------------------------------------------ */
+/* CSS:Display-END                                         */
+/* ------------------------------------------------------ */
+
+
+
+/* ------------------------------------------------------ */
+/* CSS:Edit-START                                          */
+/* ------------------------------------------------------ */
+.section-edit {
+    flex: 1;
+    background: #fafafa;
+}
+.section-edit h2 { margin-top: 0; }
+/* ------------------------------------------------------ */
+/* CSS:Edit-END                                            */
+/* ------------------------------------------------------ */
+
+
+
+/* ------------------------------------------------------ */
+/* CSS:EditFields-START                                    */
+/* ------------------------------------------------------ */
+.edit-fields {}
+/* ------------------------------------------------------ */
+/* CSS:EditFields-END                                      */
+/* ------------------------------------------------------ */
+
+
+
+/* ------------------------------------------------------ */
+/* CSS:CodeFields-START                                    */
+/* ------------------------------------------------------ */
+.code-fields {}
+/* ------------------------------------------------------ */
+/* CSS:CodeFields-END                                      */
+/* ------------------------------------------------------ */
+
+
+
+/* ------------------------------------------------------ */
+/* CSS:Tools-START                                         */
+/* ------------------------------------------------------ */
+.tools {}
+
+/* 參考底圖層（放在 SVG 上方，但不阻擋） */
+#refImageLayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: visible;
+    pointer-events: none;
+}
+
+#refImageLayer img {
+    position: absolute;
+}
+
+
+/* 控制點 */
+.ref-handle {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(255, 165, 0, 0.9);
+    border: 2px solid #fff;
+    position: absolute;
+    pointer-events: auto;
+}
+
+.ref-handle.corner { cursor: nwse-resize; }
+.ref-handle.edge { cursor: ns-resize; }
+.ref-handle.edge-h { cursor: ew-resize; }
+
+/* ------------------------------------------------------ */
+/* CSS:Tools-END                                           */
+/* ------------------------------------------------------ */
+
+
+
+
+</style>
+</head>
+
+
+
+<body>
+<main class="page">
+
+<!-- SECTION:Display-START -->
+<section class="section section-display" id="Display">
+    <div id="svgFrame" style="position:relative; width:100%; height:100%; overflow:auto;">
+        <div id="refLayerContainer"></div>
+        <div id="svgLayer"></div>
+    </div>
+</section>
+<!-- SECTION:Display-END -->
+
+
+<!-- SECTION:Edit-START -->
+<section class="section section-edit" id="Edit">
+
+    <!-- SECTION:EditFields-START -->
+    <div class="edit-fields">
+        <h2>端點座標</h2>
+        <div class="input-row">
+            <label>X：</label><input type="number" id="inputX" />
+            <label>Y：</label><input type="number" id="inputY" />
+        </div>
+        <button id="applyPoint">套用座標（同步所有對應端點）</button>
+    </div>
+    <!-- SECTION:EditFields-END -->
+
+
+    <!-- SECTION:CodeFields-START -->
+    <div class="code-fields">
+        <h2>SVG 程式碼</h2>
+        <textarea id="codeArea"></textarea>
+        <button id="applySvg">更新 SVG</button>
+    </div>
+    <!-- SECTION:CodeFields-END -->
+
+
+    <!-- SECTION:Tools-START -->
+    <div class="tools" style="margin-top:20px;">
+        <h2>工具</h2>
+        <!-- 參考底圖工具 -->
+        <div style="margin-top:20px;">
+            <h3>參考底圖</h3>
+            <input type="file" id="refImageInput" accept="image/*">
+        
+            <div style="margin-top:10px;">
+                <button id="toggleRefEdit">調整底圖</button>
+                <button id="toggleAspect" style="display:none;">鎖定比例</button>
+            </div>
+        </div>
+        
+    </div>
+    <!-- SECTION:Tools-END -->
+
+</section>
+<!-- SECTION:Edit-END -->
+
+</main>
+
+
+<script>
+    /* ============================================================
+   基本狀態（SVG 編輯）
+============================================================ */
+let cleanSvgString = "";
+let svgRoot = null;
+let pointList = [];
+let selection = null;
+
+let undoStack = [];
+let dragging = false;
+let dragPreview = null;
+
+let SNAP_GRID = 5;
+let SNAP_NEAR = 10;
+
+
+/* ============================================================
+   snap 工具
+============================================================ */
+function snapTo5(n) {
+    return Math.round(n / SNAP_GRID) * SNAP_GRID;
+}
+
+function snapToNearby(nx, ny) {
+    if (!selection) return { x: nx, y: ny };
+
+    for (let pt of pointList) {
+        if (Math.abs(pt.x - selection.x) < 0.01 &&
+            Math.abs(pt.y - selection.y) < 0.01) continue;
+
+        if (Math.abs(pt.x - nx) <= SNAP_NEAR &&
+            Math.abs(pt.y - ny) <= SNAP_NEAR) {
+            return { x: pt.x, y: pt.y };
+        }
+    }
+    return { x: nx, y: ny };
+}
+
+
+/* ============================================================
+   清乾淨 SVG ，移除 style / circle / inline-style
+============================================================ */
+function extractCleanSvg() {
+    let raw = document.getElementById("codeArea").value;
+
+    raw = raw.replace(/<style[\s\S]*?<\/style>/gi, "");
+    raw = raw.replace(/style="[^"]*"/gi, "");
+    raw = raw.replace(/<circle[^>]*>/gi, "");
+    raw = raw.replace(/<\/circle>/gi, "");
+
+    cleanSvgString = raw;
+}
+
+
+/* ============================================================
+   renderSVG（只重繪 SVG，絕不動底圖）
+============================================================ */
+function renderSVG() {
+    extractCleanSvg();
+
+    const svgLayer = document.getElementById("svgLayer");
+    svgLayer.innerHTML = cleanSvgString;
+
+    svgRoot = svgLayer.querySelector("svg");
+    if (!svgRoot) return;
+
+    svgRoot.classList.add("svg-force");
+    svgRoot.querySelectorAll("style").forEach(s => s.remove());
+
+    parseAllPaths();
+    drawPoints();
+    restoreSelection();
+}
+
+
+/* ============================================================
+   解析所有 path
+============================================================ */
+function parseAllPaths() {
+    pointList = [];
+
+    const paths = svgRoot.querySelectorAll("path");
+    const re = /([ML])\s*([\d.-]+)[ ,]+([\d.-]+)/gi;
+
+    paths.forEach((path, pi) => {
+        const d = path.getAttribute("d");
+        if (!d) return;
+
+        let m, idx = 0;
+        while ((m = re.exec(d)) !== null) {
+            pointList.push({
+                path,
+                pathIndex: pi,
+                pointIndex: idx++,
+                x: parseFloat(m[2]),
+                y: parseFloat(m[3]),
+                full: m[0]
+            });
+        }
+    });
+}
+
+
+/* ============================================================
+   畫端點
+============================================================ */
+function drawPoints() {
+    svgRoot.querySelectorAll(".edit-point").forEach(n => n.remove());
+
+    pointList.forEach(pt => {
+        const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        c.classList.add("edit-point");
+        c.setAttribute("cx", pt.x);
+        c.setAttribute("cy", pt.y);
+        c.setAttribute("r", 2);
+
+        c.addEventListener("click", e => {
+            e.stopPropagation();
+            selectPoint(pt);
+        });
+
+        c.addEventListener("mousedown", e => {
+            if (!selection) return;
+            if (pt.x === selection.x && pt.y === selection.y) {
+                dragging = true;
+                startDragPreview();
+            }
+        });
+
+        svgRoot.appendChild(c);
+    });
+
+    highlightSelection();
+}
+
+
+/* ============================================================
+   選取端點（所有相同座標一起選）
+============================================================ */
+function selectPoint(pt) {
+    selection = { x: pt.x, y: pt.y };
+    highlightSelection();
+    setInputXY(pt.x, pt.y);
+}
+
+function highlightSelection() {
+    svgRoot.querySelectorAll(".edit-point").forEach(c => {
+        c.classList.remove("selected");
+
+        let cx = parseFloat(c.getAttribute("cx"));
+        let cy = parseFloat(c.getAttribute("cy"));
+        if (selection && cx === selection.x && cy === selection.y) {
+            c.classList.add("selected");
+        }
+    });
+}
+
+function restoreSelection() {
+    if (!selection) return;
+    highlightSelection();
+    setInputXY(selection.x, selection.y);
+}
+
+
+/* ============================================================
+   編輯欄位
+============================================================ */
+function setInputXY(x, y) {
+    document.getElementById("inputX").value = x;
+    document.getElementById("inputY").value = y;
+}
+
+document.getElementById("inputX").addEventListener("keydown", e => {
+    if (e.key === "Enter") applyInputUpdate();
+});
+document.getElementById("inputY").addEventListener("keydown", e => {
+    if (e.key === "Enter") applyInputUpdate();
+});
+
+function applyInputUpdate() {
+    let x = parseFloat(document.getElementById("inputX").value);
+    let y = parseFloat(document.getElementById("inputY").value);
+    if (Number.isNaN(x) || Number.isNaN(y)) return;
+
+    x = snapTo5(x);
+    y = snapTo5(y);
+
+    let s = snapToNearby(x, y);
+    applyUpdate(s.x, s.y);
+}
+
+
+/* ============================================================
+   拖曳端點
+============================================================ */
+function startDragPreview() {
+    dragPreview = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dragPreview.classList.add("drag-preview");
+    dragPreview.setAttribute("r", 4);
+    svgRoot.appendChild(dragPreview);
+}
+
+document.addEventListener("mousemove", e => {
+    if (!dragging || !selection) return;
+
+    const pt = svgRoot.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const p = pt.matrixTransform(svgRoot.getScreenCTM().inverse());
+
+    dragPreview.setAttribute("cx", p.x);
+    dragPreview.setAttribute("cy", p.y);
+});
+
+document.addEventListener("mouseup", e => {
+    if (!dragging || !selection) return;
+    dragging = false;
+
+    const pt = svgRoot.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    let p = pt.matrixTransform(svgRoot.getScreenCTM().inverse());
+
+    p.x = snapTo5(p.x);
+    p.y = snapTo5(p.y);
+    let s = snapToNearby(p.x, p.y);
+
+    applyUpdate(s.x, s.y);
+    dragPreview.remove();
+});
+
+
+/* ============================================================
+   修改 SVG path（所有相同座標端點同步更新）
+============================================================ */
+function applyUpdate(nx, ny) {
+    const ox = selection.x;
+    const oy = selection.y;
+
+    let updated = cleanSvgString;
+
+    pointList.forEach(pt => {
+        if (pt.x === ox && pt.y === oy) {
+            const newToken = pt.full.replace(
+                /([\d.-]+)[ ,]+([\d.-]+)/,
+                `${nx} ${ny}`
+            );
+            updated = updated.replace(pt.full, newToken);
+        }
+    });
+
+    undoStack.push(updated);
+    document.getElementById("codeArea").value = updated;
+
+    selection.x = nx;
+    selection.y = ny;
+
+    renderSVG();
+}
+
+
+/* ============================================================
+   更新 SVG 按鈕
+============================================================ */
+document.getElementById("applySvg").addEventListener("click", () => {
+    undoStack.push(document.getElementById("codeArea").value);
+    renderSVG();
+});
+
+
+/* ============================================================
+   Undo
+============================================================ */
+document.addEventListener("keydown", e => {
+    if (e.ctrlKey && e.key === "z") {
+        e.preventDefault();
+        if (undoStack.length > 1) {
+            undoStack.pop();
+            let prev = undoStack.at(-1);
+            document.getElementById("codeArea").value = prev;
+            renderSVG();
+        }
+    }
+});
+
+
+/* ============================================================
+   初始 SVG
+============================================================ */
+document.getElementById("codeArea").value =
+`<svg viewBox="0 0 300 300">
+    <path d="M 50 50 L 200 50 L 200 200 L 50 200 Z" />
+</svg>`;
+undoStack.push(document.getElementById("codeArea").value);
+renderSVG();
+
+/* ============================================================
+   ★★★ 參考底圖功能 v3（只調整底圖，不動 SVG 編輯）★★★
+============================================================ */
+
+let refMode = false;          // 是否進入調整底圖模式
+let refKeepAspect = false;    // 是否鎖定比例
+let refLayer = null;          // 底圖圖層
+let refImg = null;            // 底圖圖像
+let refHandles = [];          // 控制點清單
+
+// 底圖位置與大小
+let ref = {
+    x: 0,
+    y: 0,
+    w: 300,
+    h: 300,
+    aspect: 1
+};
+
+
+/* ============================================================
+   初始化底圖層（放在 svgFrame 裡，而不是 refLayerContainer）
+============================================================ */
+function initRefLayer() {
+    const frame = document.getElementById("svgFrame");
+
+    // 建立底圖層
+    refLayer = document.createElement("div");
+    refLayer.style.position = "absolute";
+    refLayer.style.left = 0;
+    refLayer.style.top = 0;
+    refLayer.style.pointerEvents = "none";  // 一般模式不阻擋點擊
+    refLayer.style.zIndex = 10;
+    frame.appendChild(refLayer);
+
+    // 建立底圖
+    refImg = document.createElement("img");
+    refImg.style.position = "absolute";
+    refImg.style.pointerEvents = "none";
+    refImg.draggable = false;
+    refImg.style.opacity = "0.3";   // 一般模式透明 30%
+    refLayer.appendChild(refImg);
+}
+initRefLayer();
+
+
+/* ============================================================
+   上傳底圖
+============================================================ */
+document.getElementById("refImageInput").addEventListener("change", e => {
+    const f = e.target.files[0];
+    if (!f) return;
+
+    const url = URL.createObjectURL(f);
+    refImg.src = url;
+
+    const frame = document.getElementById("svgFrame");
+
+    // 初始位置
+    ref.w = frame.clientWidth * 0.6;
+    ref.h = frame.clientHeight * 0.6;
+    ref.x = frame.clientWidth * 0.2;
+    ref.y = frame.clientHeight * 0.2;
+    ref.aspect = ref.w / ref.h;
+
+    applyRef();
+});
+
+
+/* ============================================================
+   套用底圖位置與大小
+============================================================ */
+function applyRef() {
+    refImg.style.left = ref.x + "px";
+    refImg.style.top = ref.y + "px";
+    refImg.style.width = ref.w + "px";
+    refImg.style.height = ref.h + "px";
+
+    positionHandles();
+}
+
+
+/* ============================================================
+   切換調整底圖模式
+============================================================ */
+document.getElementById("toggleRefEdit").addEventListener("click", () => {
+    refMode = !refMode;
+
+    const btn = document.getElementById("toggleRefEdit");
+    btn.style.background = refMode ? "#ff7f50" : "#4da6ff";
+
+    document.getElementById("toggleAspect").style.display = refMode ? "inline-block" : "none";
+
+    if (refMode) enterRefMode();
+    else exitRefMode();
+});
+
+
+function enterRefMode() {
+    // 可以操作底圖
+    refLayer.style.pointerEvents = "auto";
+    refImg.style.pointerEvents = "auto";
+
+    // 禁止碰到 SVG 的點
+    if (svgRoot) svgRoot.style.pointerEvents = "none";
+
+    // 透明度提升
+    refImg.style.opacity = "0.5";
+
+    createHandles();
+}
+
+
+function exitRefMode() {
+    refLayer.style.pointerEvents = "none";
+    refImg.style.pointerEvents = "none";
+
+    if (svgRoot) svgRoot.style.pointerEvents = "auto";
+
+    refImg.style.opacity = "0.3";
+
+    removeHandles();
+}
+
+
+/* ============================================================
+   控制點 UI
+============================================================ */
+function createHandles() {
+    removeHandles();
+
+    const pos = [
+        ["nw", 0, 0],
+        ["ne", 1, 0],
+        ["sw", 0, 1],
+        ["se", 1, 1],
+        ["n", 0.5, 0],
+        ["s", 0.5, 1],
+        ["w", 0, 0.5],
+        ["e", 1, 0.5]
+    ];
+
+    pos.forEach(p => {
+        const h = document.createElement("div");
+        h.dataset.handle = p[0];
+
+        h.style.width = "12px";
+        h.style.height = "12px";
+        h.style.background = "#fff";
+        h.style.border = "2px solid #ff7f50";
+        h.style.borderRadius = "50%";
+        h.style.position = "absolute";
+        h.style.cursor = "pointer";
+        h.style.pointerEvents = "auto";
+
+        h.addEventListener("mousedown", handleResizeStart);
+
+        refHandles.push(h);
+        refLayer.appendChild(h);
+    });
+
+    positionHandles();
+}
+
+
+function removeHandles() {
+    refHandles.forEach(h => h.remove());
+    refHandles = [];
+}
+
+
+/* ============================================================
+   控制點位置
+============================================================ */
+function positionHandles() {
+    refHandles.forEach(h => {
+        const name = h.dataset.handle;
+        const map = {
+            nw: [0, 0],
+            ne: [1, 0],
+            sw: [0, 1],
+            se: [1, 1],
+            n: [0.5, 0],
+            s: [0.5, 1],
+            w: [0, 0.5],
+            e: [1, 0.5]
+        };
+
+        const r = map[name];
+        h.style.left = ref.x + ref.w * r[0] - 6 + "px";
+        h.style.top = ref.y + ref.h * r[1] - 6 + "px";
+    });
+}
+
+
+/* ============================================================
+   拖曳控制點（調整大小）
+============================================================ */
+let resizeHandle = null;
+
+function handleResizeStart(e) {
+    e.stopPropagation();
+    resizeHandle = e.target.dataset.handle;
+
+    document.addEventListener("mousemove", handleResizeMove);
+    document.addEventListener("mouseup", handleResizeEnd);
+}
+
+
+function handleResizeMove(e) {
+    const dx = e.movementX;
+    const dy = e.movementY;
+
+    const before = { ...ref };
+
+    switch (resizeHandle) {
+        case "se": ref.w += dx; ref.h += dy; break;
+        case "sw": ref.x += dx; ref.w -= dx; ref.h += dy; break;
+        case "ne": ref.y += dy; ref.h -= dy; ref.w += dx; break;
+        case "nw": ref.x += dx; ref.y += dy; ref.w -= dx; ref.h -= dy; break;
+        case "e":  ref.w += dx; break;
+        case "w":  ref.x += dx; ref.w -= dx; break;
+        case "n":  ref.y += dy; ref.h -= dy; break;
+        case "s":  ref.h += dy; break;
+    }
+
+    if (refKeepAspect) {
+        const asp = before.w / before.h;
+        ref.h = ref.w / asp;
+    }
+
+    applyRef();
+}
+
+
+function handleResizeEnd() {
+    resizeHandle = null;
+    document.removeEventListener("mousemove", handleResizeMove);
+    document.removeEventListener("mouseup", handleResizeEnd);
+}
+
+
+/* ============================================================
+   拖曳底圖（平移）
+============================================================ */
+refImg.addEventListener("mousedown", e => {
+    if (!refMode) return;
+    e.preventDefault();
+
+    let sx = e.clientX;
+    let sy = e.clientY;
+    let bx = ref.x;
+    let by = ref.y;
+
+    function move(ev) {
+        ref.x = bx + (ev.clientX - sx);
+        ref.y = by + (ev.clientY - sy);
+        applyRef();
+    }
+
+    function up() {
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener("mouseup", up);
+    }
+
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+});
+
+
+/* ============================================================
+   鎖定比例
+============================================================ */
+document.getElementById("toggleAspect").addEventListener("click", () => {
+    refKeepAspect = !refKeepAspect;
+    const b = document.getElementById("toggleAspect");
+    b.style.background = refKeepAspect ? "#ff7f50" : "#4da6ff";
+});
+
+
+
+</script>
+    
+  
+
+</body>
+</html>
