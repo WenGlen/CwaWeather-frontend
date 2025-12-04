@@ -28,6 +28,7 @@
             padding: 0;
             box-sizing: border-box;
             -webkit-text-stroke: 0;
+            /* border: 1px solid #666;  */
         }
         html {
             background: #0a0b0e;
@@ -43,32 +44,45 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* ===== 桌機原樣式（完全不動） ===== */
+        /* ===== 桌機原樣式 ===== */
 
         .layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            justify-content: end;
             height: 100vh;
+            width: 100vw;
             position: relative;
         }
 
         .left {
-            min-width: 640px;
-            padding: 80px 120px;
+            position: absolute;
+            top: 0px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+
+            min-height: 100vh;
+            width: 100%;
+            max-width: 1080px;
+            margin: 0 auto;
+
+            padding: 64px 120px;
+            gap: 32px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            z-index: 10;
+            pointer-events: none;
         }
 
-        .left-top {
+        .left-main {
+            min-width: 420px;
             display: flex;
             flex-direction: column;
             gap: 30px;
         }
 
         .city-label {
-            font-size: 1.2rem;
+            font-size: 2rem;
             color: var(--accent);
             font-weight: 700;
             letter-spacing: 3px;
@@ -76,6 +90,7 @@
         }
 
         .city-label .time-period {
+            font-size: 1.2rem;
             color: var(--text-light);
             font-weight: 400;
             margin-left: 8px;
@@ -100,7 +115,7 @@
             letter-spacing: 1px;
         }
 
-        .switch-row {
+        .desc-layout {
             display: flex;
             gap: 16px;
             margin-top: 8px;
@@ -123,25 +138,17 @@
             color: var(--text-mid);
         }
 
-        .forecast-title {
-            margin-top: 40px;
-            color: var(--accent);
-            font-weight: 700;
-            letter-spacing: 3px;
-            font-size: 1.1rem;
-            transition: color 0.6s ease;
-        }
 
-        .forecast-scroll {
+        .left-forecast {
+            width: fit-content;
             display: flex;
-            gap: 12px;
-            margin-top: 18px;
-            padding-bottom: 8px;
+            gap: 24px;
             overflow-x: auto;
+            pointer-events: none;
         }
 
         .mini-box {
-            min-width: 160px;
+            min-width: 200px;
             background: rgba(255, 255, 255, 0.05);
             padding: 16px 28px;
             backdrop-filter: blur(6px);
@@ -160,13 +167,15 @@
 
         /* 右半部 */
         .right {
-            position: relative;
+            height: 100vh;
+            width: 50%;
+            z-index: 5;
+
             display: flex;
+            flex-direction: column;
             overflow-y: auto;
             overflow-x: hidden;
-            padding-right: 40px;
-            height: 100vh;
-            z-index: 5;
+
             /* 隐藏滚动条但保持滚动功能 */
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* IE and Edge */
@@ -208,16 +217,16 @@
         }
 
         #twMap {
-            position: absolute;
+            z-index: 2;
             width: 100%;
-            top: 5%;
-            right: 0;
+            height: auto;
+            margin-top: 5vh; 
             opacity: 0.80;
             stroke: var(--line);
             fill: transparent;
             stroke-width: 3px;
             pointer-events: auto;
-            z-index: 2;
+            flex-shrink: 0; 
         }
 
         .tw-city {
@@ -257,6 +266,9 @@
             paint-order: normal;
         }
 
+        #openMenuBtn {
+            display: none; 
+        }
 
         /* ========================================================= */
         /*                 手 機 版  200vw  大 畫 布                 */
@@ -267,8 +279,9 @@
             html,
             body {
                 height: 100%;
-                overflow: hidden;
                 width: 100%;
+                overflow: hidden;
+
             }
 
             body {
@@ -279,39 +292,42 @@
             /* 整個畫面變成左右 200vw */
             .layout {
                 display: flex;
-                flex-direction: row;
                 width: 200vw;
-                height: 100vh;
                 transition: transform 0.45s ease;
-                position: relative;
             }
 
             /* 左 = 主畫面，右 = 選單畫面 */
-            .left,
-            .right {
-                width: 100vw;
-                height: 100vh;
+            .left {
+                padding: 64px 64px 32px 64px;
             }
 
             /* 主畫面排版縮小 */
-            .left {
-                min-width: auto;
-                padding: 40px 28px;
-                position: relative;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-            }
+
             .right {
+                width: 100vw;
+                height: 100vh;
                 padding: 0;
-                transform: translateX(30px) translateY(-40px) scale(1.2);
+                transform: translateX(90px) translateY(20px) scale(1.2);
                 overflow: hidden;
             }
 
+            /* 主畫面右下角的小按鈕「<」 */
+            #openMenuBtn {
+                position: absolute;
+                right: 50%;
+                bottom: 16px;
+                z-index: 3000;
+                font-size: 2.4rem;
+                color: var(--text-light);
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 16px;
+            }
 
 
             .city-label {
-                font-size: 1rem;
+                font-size: 1.6rem;
                 letter-spacing: 2px;
             }
 
@@ -324,13 +340,9 @@
                 font-size: 3rem;
             }
 
-            .switch-row {
+            .desc-layout {
                 gap: 30px;
                 flex-direction: column;
-            }
-
-            .forecast-title {
-                margin-top: 120px;
             }
 
             /* 手機版橘色遮罩：要橫跨整個 200vw，保持連續不破圖 */
@@ -370,28 +382,13 @@
                 paint-order: normal;
             }
 
-            /* 主畫面右下角的小按鈕「<」 */
-            #openMenuBtn {
-                position: absolute;
-                right: 20px;
-                bottom: 22px;
-                z-index: 3000;
-                font-size: 2.4rem;
-                color: var(--text-light);
-                background: none;
-                border: none;
-                cursor: pointer;
-                padding: 5px;
-            }
-
             /* 調整預測卡片 */
             .mini-box {
                 min-width: 100px;
             }
 
-            .forecast-scroll {
+            .left-forecast {
                 flex-direction: column;
-                width: fit-content;
             }
         }
     </style>
@@ -421,16 +418,15 @@
 
     <div id="canvas" class="layout">
         <div class="orange-mask"></div>
+        <button id="openMenuBtn">‹</button>
 
         <!-- 主畫面（左 100vw） -->
         <div class="left">
-            <div class="left-top">   
-                <!-- 手機右下角 按鈕（桌機隱藏） -->
-                <button id="openMenuBtn" style="display:none;">‹</button>
-            
+
+            <div class="left-main">   
                 <div id="cityName" class="city-label">--</div>
                 <div id="mainTemp" class="temp-big">--<span class="temp-unit">°C</span></div>
-                <div class="switch-row">
+                <div class="desc-layout">
                     <div id="mainDesc" class="weather-desc">載入中...</div>
                         <div class="advice-row">
                         <div class="advice-item">
@@ -445,7 +441,8 @@
                 </div>
             </div>
             
-            <div id="futureBox" class="forecast-scroll"></div>
+            <div id="futureBox" class="left-forecast"></div>
+            
         </div>
 
         <!-- 選單畫面（右 100vw） -->
@@ -453,30 +450,6 @@
             <svg viewBox="0 0 600 1200" id="twMap">
 
                 <g>
-                    <!-- Paths -->
-                    <path data-city="lienchiang" class="tw-city" d="M150 180 L180 190 L170 215 L140 205 Z"></path>
-                    <path data-city="kinmen" class="tw-city" d="M30 350 L80 360 L70 400 L20 390 Z"></path>
-                    <path data-city="penghu" class="tw-city" d="M35 565 L45 595 L15 605 L5 575 Z"></path>
-                    <path data-city="newtaipei" class="tw-city" d="M315 200 L445 240 L440 290 L380 325 L290 245 Z"></path>
-                    <path data-city="keelung" class="tw-city" d="M410 215 L430 230 L410 255 L390 240 Z"></path>
-                    <path data-city="taipei" class="tw-city" d="M370 225 L410 255 L390 280 L350 250 Z"></path>
-                    <path data-city="yilan" class="tw-city" d="M380 325 L440 290 L440 430 L340 430 L360 375 Z"></path>
-                    <path data-city="taoyuan" class="tw-city" d="M290 245 L380 325 L360 375 L265 290 Z"></path>
-                    <path data-city="hsinchu_county" class="tw-city" d="M265 290 L360 375 L340 430 L230 350 Z"></path>
-                    <path data-city="hsinchu_city" class="tw-city" d="M250 315 L270 330 L250 365 L230 350 Z"></path>
-                    <path data-city="miaoli" class="tw-city" d="M230 350 L340 430 L245 445 L180 430 Z"></path>
-                    <path data-city="taichung" class="tw-city" d="M180 430 L245 445 L340 430 L330 485 L230 500 L150 485 Z"></path>
-                    <path data-city="hualien" class="tw-city" d="M440 430 L400 650 L290 720 L330 485 L340 430 Z"></path>
-                    <path data-city="taitung" class="tw-city" d="M290 720 L400 650 L320 920 L270 830 Z"></path>
-                    <path data-city="nantou" class="tw-city" d="M330 485 L290 720 L270 720 L250 650 L240 580 L230 500 Z"></path>
-                    <path data-city="changhua" class="tw-city" d="M150 485 L230 500 L240 580 L110 560 Z"></path>
-                    <path data-city="yunlin" class="tw-city" d="M110 560 L240 580 L250 650 L100 630 Z"></path>
-                    <path data-city="chiayi_county" class="tw-city" d="M100 630 L250 650 L270 720 L250 750 L90 730 Z"></path>
-                    <path data-city="chiayi_city" class="tw-city" d="M170 680 L220 680 L220 700 L170 700 Z"></path>
-                    <path data-city="tainan" class="tw-city" d="M90 730 L250 750 L180 805 L120 840 Z"></path>
-                    <path data-city="kaohsiung" class="tw-city" d="M120 840 L180 805 L250 750 L270 720 L290 720 L270 830 L180 920 Z"></path>
-                    <path data-city="pingtung" class="tw-city" d="M180 920 L270 830 L320 920 L300 1100 L240 1080 Z"></path>
-
                     <!-- Texts -->
                     <text x="170" y="175" class="city-label-tag" stroke="none">連江</text>
                     <text x="40" y="340" class="city-label-tag" stroke="none">金門</text>
@@ -494,12 +467,36 @@
                     <text x="260" y="590" class="city-label-tag" stroke="none">南投</text>
                     <text x="170" y="540" class="city-label-tag" stroke="none">彰化</text>
                     <text x="170" y="610" class="city-label-tag" stroke="none">雲林</text>
-                    <text x="110" y="685" class="city-label-tag" stroke="none">嘉義縣</text>
+                    <text x="105" y="685" class="city-label-tag" stroke="none">嘉義縣</text>
                     <text x="170" y="695" class="city-label-tag" stroke="none">嘉義市</text>
                     <text x="140" y="780" class="city-label-tag" stroke="none">台南</text>
                     <text x="180" y="850" class="city-label-tag" stroke="none">高雄</text>
                     <text x="310" y="780" class="city-label-tag" stroke="none">台東</text>
                     <text x="240" y="940" class="city-label-tag" stroke="none">屏東</text>
+                    <!-- Paths -->
+                    <path data-city="lienchiang" class="tw-city" d="M150 180 L180 190 L170 215 L140 205 Z"></path>
+                    <path data-city="kinmen" class="tw-city" d="M30 350 L80 360 L70 400 L20 390 Z"></path>
+                    <path data-city="penghu" class="tw-city" d="M35 565 L45 595 L15 605 L5 575 Z"></path>
+                    <path data-city="newtaipei" class="tw-city" d="M325 185 L410 215 L390 240 L370 225 L350 250 L390 280 L410 255 L410 255 L430 230 L450 245 L440 290 L380 325 L290 245 Z"></path>
+                    <path data-city="keelung" class="tw-city" d="M410 215 L430 230 L410 255 L390 240 Z"></path>
+                    <path data-city="taipei" class="tw-city" d="M370 225 L410 255 L390 280 L350 250 Z"></path>
+                    <path data-city="yilan" class="tw-city" d="M380 325 L440 290 L440 430 L340 430 L360 375 Z"></path>
+                    <path data-city="taoyuan" class="tw-city" d="M290 245 L380 325 L360 375 L265 290 Z"></path>
+                    <path data-city="hsinchu_county" class="tw-city" d="M265 290 L360 375 L340 430 L250 365 L270 330 L250 315 Z"></path>
+                    <path data-city="hsinchu_city" class="tw-city" d="M250 315 L270 330 L250 365 L230 350 Z"></path>
+                    <path data-city="miaoli" class="tw-city" d="M230 350 L340 430 L245 445 L180 430 Z"></path>
+                    <path data-city="taichung" class="tw-city" d="M180 430 L245 445 L340 430 L330 485 L230 500 L150 485 Z"></path>
+                    <path data-city="hualien" class="tw-city" d="M440 430 L400 650 L290 720 L330 485 L340 430 Z"></path>
+                    <path data-city="taitung" class="tw-city" d="M290 720 L400 650 L320 920 L270 830 Z"></path>
+                    <path data-city="nantou" class="tw-city" d="M330 485 L290 720 L270 720 L250 650 L240 580 L230 500 Z"></path>
+                    <path data-city="changhua" class="tw-city" d="M150 485 L230 500 L240 580 L110 560 Z"></path>
+                    <path data-city="yunlin" class="tw-city" d="M110 560 L240 580 L250 650 L100 630 Z"></path>
+                    <path data-city="chiayi_county" class="tw-city" d="M100 630 L250 650 L270 720 L250 750 L90 730 Z M165 675 L225 675 L225 705 L165 705 Z"></path>
+                    <path data-city="chiayi_city" class="tw-city" d="M165 675 L225 675 L225 705 L165 705 Z"></path>
+                    <path data-city="tainan" class="tw-city" d="M90 730 L250 750 L180 805 L120 840 Z"></path>
+                    <path data-city="kaohsiung" class="tw-city" d="M120 840 L180 805 L250 750 L270 720 L290 720 L270 830 L180 920 Z"></path>
+                    <path data-city="pingtung" class="tw-city" d="M180 920 L270 830 L320 920 L300 1100 L240 1080 Z"></path>
+                    
                 </g>
             </svg>
         </div>
@@ -616,6 +613,8 @@
                 openBtn.style.display = "block";
             } else {
                 openBtn.style.display = "none";
+                // 當切換回桌機版時，重置 canvas 的 transform，避免內容被推到畫面外
+                canvas.style.transform = "";
             }
         }
         updateButtonVisibility();
@@ -721,13 +720,13 @@
 
 
         /* --------------------------------------------- */
-        /*            躁點效果 （跟據降雨機率）         ㄋ      */
+        /*            躁點效果 （跟據降雨機率）              */
         /* --------------------------------------------- */
 
         /* 噪點模糊參數配置 */
         const NOISE_BLUR_CONFIG = {
             angle: 15,        // 傾斜角度（度）
-            intensity: 2      // 模糊強度
+            intensity: 1.2      // 模糊強度
         };
 
         /* 計算傾斜模糊的 stdDeviation 值 */
@@ -765,13 +764,13 @@
 
             // 預設值處理：如果降雨機率無效或未定義，設為0%
             const validRainPercent = (rainPercent !== null && rainPercent !== undefined && !isNaN(rainPercent)) 
-                ? Math.max(0, Math.min(100, 20)) 
+                ? Math.max(0, Math.min(100, rainPercent)) 
                 : 0;
 
             const minRainPercent = 20;  // 變化起始點
             const maxRainPercent = 80;  // 變化結束點
             const minIntercept = -8;   // 下界
-            const maxIntercept = -6;    // 上界
+            const maxIntercept = -5.5;    // 上界
             
             // 將 20-70% 映射到 normalizedRain 的範圍
             const normalizedRain = Math.min(Math.max((validRainPercent - minRainPercent) / (maxRainPercent - minRainPercent), 0), 1);
