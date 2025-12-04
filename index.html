@@ -226,7 +226,6 @@
             width: 100%;
             height: auto;
             opacity: 0.80;
-            transform: translateX(25px) translateY(25px);
             
             stroke: var(--line);
             fill: transparent;
@@ -321,7 +320,7 @@
 
             /* 左 = 主畫面，右 = 選單畫面 */
             .left {
-                padding: 64px 64px 32px 64px;
+                padding: 64px 64px 48px 64px;
             }
 
             /* 主畫面排版縮小 */
@@ -389,6 +388,8 @@
                 opacity: 1;
                 left: 0;
                 top: 0;
+
+                transform: translateX(25px) translateY(25px);
             }
 
             /* 加上文字標籤（手機版顯示） */
